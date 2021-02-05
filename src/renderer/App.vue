@@ -2,7 +2,7 @@
   <div
     id="app"
     :style="`background: ${$windowBackgroundColor}; ${
-      $showBorder ? 'border: 1.5px solid black;' : null
+      $showBorder ? 'border: 1.5px solid black;' : 'border: 0;'
     } height: ${$isSettingsPage ? 'auto' : '100%'}`"
   >
     <router-view />
