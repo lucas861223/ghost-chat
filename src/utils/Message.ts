@@ -138,7 +138,7 @@ export default class Message {
         if (item in this.channelBadgeList[user['room-id']!].badge_sets) {
           const badgeImageUrl = this.channelBadgeList[user['room-id']!].badge_sets[item].versions[
             user.badges![item]!
-          ]?.image_url_1x;
+          ]?.image_url_2x;
           if (badgeImageUrl) {
             badges.push({
               badge: badgeImageUrl,
@@ -146,7 +146,7 @@ export default class Message {
             });
           }
         } else if (item in this.badgeList.badge_sets) {
-          const badgeImageUrl = this.badgeList.badge_sets[item].versions['1']?.image_url_1x;
+          const badgeImageUrl = this.badgeList.badge_sets[item].versions['1']?.image_url_2x;
           if (badgeImageUrl) {
             badges.push({
               badge: badgeImageUrl,

@@ -4,8 +4,7 @@
     <div
       id="chat-messages"
       class="container mx-auto px-4"
-      :style="`${$fontSize ? 'font-size: ' + $fontSize + 'pt' : ''}`"
-    >
+      :style="`${$fontSize ? 'font-size: ' + $fontSize + 'pt' : ''}`">
       <div v-if="isLoading" style="font-size: 12pt">
         <Loading loading-text="Loading Chat ⊂(◉‿◉)つ" />
       </div>
@@ -13,38 +12,32 @@
         <span>Connected, waiting for messages...</span>
       </div>
       <div v-for="item of data" v-else :key="item.key">
-        <div
+        <span
           :style="
-            item.message.toLowerCase().includes(`@${broadCaster}`) ? 'background: #d15b5b' : ''
-          "
-          class="mb-1 text-text-white"
-        >
-          <div id="message" class="break-words">
-            <div v-if="item.user && item.user.pfp">
-              <img
-                class="badges"
-                alt="pfp"
-                :src="item.user.pfp"
-                width="18"
-                height="18"
-              />
-            </div>
-            <div v-if="item.user && item.user.badges">
-              <img
-                v-for="badge in item.user.badges"
-                :key="badge.key"
-                class="badges"
-                alt="badge"
-                :src="badge.badge"
-              />
-            </div>
-            <b :style="'color:' + (item.user ? item.user.color : '#0398fc')">
-              {{ (item.user && item.user.name) || 'John Doe' }}
-              <span class="text-white font-light">: </span></b
-            >
-            <ChatMessage :id="item.key" :message="item.message" @expired="handleRemoveMessage" />
-          </div>
-        </div>
+            item.message.toLowerCase().includes(`@${broadCaster}`) ? 'background: #d15b5b' : ''"
+          class="inline-block" id="message" vertical-align="center">
+          <img
+            v-if="item.user && item.user.pfp"
+            class="emotes align-middle"
+            alt="pfp"
+            :src="item.user.pfp"
+            :width="$fontSize * 1.5"
+          />
+          <img
+            v-if="item.user && item.user.badges"
+            v-for="badge in item.user.badges"
+            :key="badge.key"
+            class="emotes align-middle"
+            alt="badge"
+            :src="badge.badge"
+            :width="$fontSize * 1.5"
+          />
+          
+          <b :style="'color:' + (item.user ? item.user.color : '#0398fc')"> 
+            {{ (item.user && item.user.name) }}
+            <span class="text-white font-light">: </span></b>
+          <ChatMessage :id="item.key" :message="item.message" @expired="handleRemoveMessage" /> 
+        </span>
       </div>
     </div>
   </div>
@@ -97,7 +90,7 @@ export default class Chat extends Vue {
 
   // inverted chat set to default
   // until we figure out why the scrolling isn't working in frameless windows
-  addNewMessageToBottom = true; // !this.$config.get(StoreConstants.ReverseChat, false);
+  addNewMessageToBottom = !this.$config.get(StoreConstants.ReverseChat, false);
 
   interval;
 
@@ -167,7 +160,7 @@ export default class Chat extends Vue {
           badges = await this.message.getUserBadges(userstate);
         }
 
-        if (!(userstate['room-id']! in this.profilePictures)) {
+        if (needsPFP && !(userstate['room-id']! in this.profilePictures)) {
           this.profilePictures[userstate['room-id']!] = await fetch(`https://api.twitch.tv/kraken/users/${userstate['room-id']}`, {
                                                           headers: {"Client-ID": "uo32ie3c8upn1xqoy0gffc3kecypfc", 
                                                                     "Accept"   : "application/vnd.twitchtv.v5+json"}
@@ -230,6 +223,7 @@ export default class Chat extends Vue {
 <style scoped lang="scss">
 #messages {
   height: 100%;
+  display: inline-block;
 
   #chat-messages {
     height: 90%;
@@ -237,18 +231,12 @@ export default class Chat extends Vue {
     &:hover {
       overflow-y: scroll;
     }
-
     &::-webkit-scrollbar {
       display: none;
     }
-
-    .badges {
-      margin-top: 3px;
-      margin-right: 3px;
-      min-width: 15px;
-      min-height: 15px;
-      float: left;
-    }
   }
+}
+.badges {
+    float: left;
 }
 </style>

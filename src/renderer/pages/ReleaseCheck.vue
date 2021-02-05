@@ -66,6 +66,7 @@ export default class ReleaseCheck extends Vue {
   }
 
   async created(): Promise<void> {
+    this.$router.push('/index');
     const releaseResponse = await fetch(
       'https://api.github.com/repos/lucas861223/ghost-chat/releases',
     ).then((res) => res.json());
