@@ -2,7 +2,7 @@ import { IBadge } from './IBadge';
 
 export interface IMessageResponse {
   user?: {
-    pfp?: string,
+    pfp?: string;
     color?: string;
     name?: string;
     badges?: IBadge[];

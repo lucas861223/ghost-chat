@@ -1,7 +1,6 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { ChatUserstate } from 'tmi.js';
 import { IBadge } from '@/renderer/types/IBadge';
-import { Dictionary } from 'vue-router/types/router';
 
 export default class Message {
   private channelBadgeList: any;
@@ -25,6 +24,7 @@ export default class Message {
   private async fetchFFZEmotes(): Promise<void> {
     // TODO: emote list to long, think about how to pre fetch the data
   }
+
   public async fetchTwitchEmotes(
     message: string,
     emotes: { [p: string]: string[] } | undefined,
@@ -64,31 +64,33 @@ export default class Message {
       resolve(result);
     });
   }
-  public async fetchBTTVEmotes(
-    room_id: string,
-    message: string,
-    result: any): Promise<any> {
+
+  public async fetchBTTVEmotes(room_id: string, message: string, result: any): Promise<any> {
     if (this.globalBttvEmotes.length === 0) {
-      const tmpJson = await fetch('https://api.betterttv.net/3/cached/emotes/global').then((res) => res.json());
-      for (var emote of tmpJson) {
-        this.globalBttvEmotes[emote['code']] = emote['id'];
+      const tmpJson = await fetch('https://api.betterttv.net/3/cached/emotes/global').then((res) =>
+        res.json(),
+      );
+      for (const emote of tmpJson) {
+        this.globalBttvEmotes[emote.code] = emote.id;
       }
     }
     if (!(room_id in this.channelBttvEmotes)) {
-      const tmpJson = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${room_id}`).then((res) => res.json());
-      this.channelBttvEmotes[room_id] = {}
-      for (var emote of tmpJson['sharedEmotes']) {
-        this.channelBttvEmotes[room_id][emote['code']] = emote['id'];
+      const tmpJson = await fetch(
+        `https://api.betterttv.net/3/cached/users/twitch/${room_id}`,
+      ).then((res) => res.json());
+      this.channelBttvEmotes[room_id] = {};
+      for (const emote of tmpJson.sharedEmotes) {
+        this.channelBttvEmotes[room_id][emote.code] = emote.id;
       }
-      for (var emote of tmpJson['channelEmotes']) {
-        this.channelBttvEmotes[room_id][emote['code']] = emote['id'];
+      for (const emote of tmpJson.channelEmotes) {
+        this.channelBttvEmotes[room_id][emote.code] = emote.id;
       }
     }
     return new Promise((resolve) => {
       const img =
         '<img alt="emote" class="emotes align-middle" src="https://cdn.betterttv.net/emote/item/2x" />';
-      const tokens = message.split(" ");
-      for (var token of tokens) {
+      const tokens = message.split(' ');
+      for (const token of tokens) {
         if (!(token in result)) {
           if (token in this.channelBttvEmotes[room_id]) {
             Object.assign(result, {
@@ -105,10 +107,7 @@ export default class Message {
     });
   }
 
-  public async formatMessage(
-    message: string,
-    result: any
-  ): Promise<string> {
+  public async formatMessage(message: string, result: any): Promise<string> {
     return new Promise((resolve) => {
       Object.keys(result).forEach((key) => {
         const escaped = escapeStringRegexp(key);
@@ -125,7 +124,9 @@ export default class Message {
 
     // cache both badge lists so that we don't need to query it every time we need to parse badges
     if (!(user['room-id']! in this.channelBadgeList)) {
-      this.channelBadgeList[user['room-id']!] = await fetch(channelBadgeUrl).then((res) => res.json());
+      this.channelBadgeList[user['room-id']!] = await fetch(channelBadgeUrl).then((res) =>
+        res.json(),
+      );
     }
 
     if (this.badgeList.length === 0) {
