@@ -83,7 +83,7 @@ export default class Message {
     if (user.badges) {
       Object.keys(user.badges).forEach((item) => {
         Object.keys(this.badgeList.badge_sets).forEach((badge) => {
-          if (badge === item && badge != "subscriber") {
+          if (badge === item && badge !== 'subscriber') {
             const badgeImageUrl = this.badgeList.badge_sets[badge].versions['1']?.image_url_1x;
             if (badgeImageUrl) {
               badges.push({
