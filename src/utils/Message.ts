@@ -1,29 +1,34 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { ChatUserstate } from 'tmi.js';
 import { IBadge } from '@/renderer/types/IBadge';
+import { Dictionary } from 'vue-router/types/router';
 
 export default class Message {
   private channelBadgeList: any;
 
   private badgeList: any;
 
+  private channelBttvEmotes: any;
+
+  private globalBttvEmotes: any;
+
+  private streamerPFP: any;
+
   constructor() {
-    this.channelBadgeList = [];
+    this.channelBadgeList = {};
     this.badgeList = [];
+    this.channelBttvEmotes = {};
+    this.globalBttvEmotes = [];
+    this.streamerPFP = {};
   }
 
   private async fetchFFZEmotes(): Promise<void> {
     // TODO: emote list to long, think about how to pre fetch the data
   }
-
-  private async fetchBTTVEmotes(): Promise<void> {
-    // TODO: check if we can somehow use their api, no official documentation for it sadly
-  }
-
-  public async formatMessage(
+  public async fetchTwitchEmotes(
     message: string,
     emotes: { [p: string]: string[] } | undefined,
-  ): Promise<string> {
+  ): Promise<any> {
     return new Promise((resolve) => {
       const img =
         '<img alt="emote" class="emotes align-middle" src="https://static-cdn.jtvnw.net/emoticons/v1/item/2.0" />';
@@ -54,14 +59,61 @@ export default class Message {
             });
           });
         });
-
-        // go through the result, escape the keys e.g. :) -> \:\), and replace the keys with the image link
-        Object.keys(result).forEach((key) => {
-          const escaped = escapeStringRegexp(key);
-          message = message.replace(new RegExp(escaped, 'g'), result[key]);
-        });
       }
+      // go through the result, escape the keys e.g. :) -> \:\), and replace the keys with the image link
+      resolve(result);
+    });
+  }
+  public async fetchBTTVEmotes(
+    room_id: string,
+    message: string,
+    result: any): Promise<any> {
+    if (this.globalBttvEmotes.length === 0) {
+      const tmpJson = await fetch('https://api.betterttv.net/3/cached/emotes/global').then((res) => res.json());
+      for (var emote of tmpJson) {
+        this.globalBttvEmotes[emote['code']] = emote['id'];
+      }
+    }
+    if (!(room_id in this.channelBttvEmotes)) {
+      const tmpJson = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${room_id}`).then((res) => res.json());
+      this.channelBttvEmotes[room_id] = {}
+      for (var emote of tmpJson['sharedEmotes']) {
+        this.channelBttvEmotes[room_id][emote['code']] = emote['id'];
+      }
+      for (var emote of tmpJson['channelEmotes']) {
+        this.channelBttvEmotes[room_id][emote['code']] = emote['id'];
+      }
+    }
+    return new Promise((resolve) => {
+      const img =
+        '<img alt="emote" class="emotes align-middle" src="https://cdn.betterttv.net/emote/item/2x" />';
+      const tokens = message.split(" ");
+      for (var token of tokens) {
+        if (!(token in result)) {
+          if (token in this.channelBttvEmotes[room_id]) {
+            Object.assign(result, {
+              [token]: img.replace('item', this.channelBttvEmotes[room_id][token]),
+            });
+          } else if (token in this.globalBttvEmotes) {
+            Object.assign(result, {
+              [token]: img.replace('item', this.globalBttvEmotes[token]),
+            });
+          }
+        }
+      }
+      resolve(result);
+    });
+  }
 
+  public async formatMessage(
+    message: string,
+    result: any
+  ): Promise<string> {
+    return new Promise((resolve) => {
+      Object.keys(result).forEach((key) => {
+        const escaped = escapeStringRegexp(key);
+        message = message.replace(new RegExp(escaped, 'g'), result[key]);
+      });
       resolve(message);
     });
   }
@@ -72,8 +124,8 @@ export default class Message {
     const badges: { badge: string; key: string }[] = [];
 
     // cache both badge lists so that we don't need to query it every time we need to parse badges
-    if (this.channelBadgeList.length === 0) {
-      this.channelBadgeList = await fetch(channelBadgeUrl).then((res) => res.json());
+    if (!(user['room-id']! in this.channelBadgeList)) {
+      this.channelBadgeList[user['room-id']!] = await fetch(channelBadgeUrl).then((res) => res.json());
     }
 
     if (this.badgeList.length === 0) {
@@ -82,31 +134,25 @@ export default class Message {
 
     if (user.badges) {
       Object.keys(user.badges).forEach((item) => {
-        Object.keys(this.badgeList.badge_sets).forEach((badge) => {
-          if (badge === item && badge !== 'subscriber') {
-            const badgeImageUrl = this.badgeList.badge_sets[badge].versions['1']?.image_url_1x;
-            if (badgeImageUrl) {
-              badges.push({
-                badge: badgeImageUrl,
-                key: Math.random().toString(36).substring(7),
-              });
-            }
+        if (item in this.channelBadgeList[user['room-id']!].badge_sets) {
+          const badgeImageUrl = this.channelBadgeList[user['room-id']!].badge_sets[item].versions[
+            user.badges![item]!
+          ]?.image_url_1x;
+          if (badgeImageUrl) {
+            badges.push({
+              badge: badgeImageUrl,
+              key: Math.random().toString(36).substring(7),
+            });
           }
-        });
-        Object.keys(this.channelBadgeList.badge_sets).forEach((badge) => {
-          if (badge === item) {
-            const badgeImageUrl = this.channelBadgeList.badge_sets[badge].versions[
-              user.badges![item]!
-            ]?.image_url_1x;
-
-            if (badgeImageUrl) {
-              badges.push({
-                badge: badgeImageUrl,
-                key: Math.random().toString(36).substring(7),
-              });
-            }
+        } else if (item in this.badgeList.badge_sets) {
+          const badgeImageUrl = this.badgeList.badge_sets[item].versions['1']?.image_url_1x;
+          if (badgeImageUrl) {
+            badges.push({
+              badge: badgeImageUrl,
+              key: Math.random().toString(36).substring(7),
+            });
           }
-        });
+        }
       });
     }
 

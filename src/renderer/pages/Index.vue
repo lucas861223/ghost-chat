@@ -26,6 +26,14 @@
               Please provide a channel name!
             </small>
           </div>
+          <div class="mt-2">
+            <small id="channelHelp2" class="text-muted"> or multiple channels separated by comma or space, e.g. Enubia1, Moonmoon  </small>
+            <br />
+          </div>
+          <div class="mt-2">
+            <small id="channelHelp3" class="text-muted"> Only the first channel will be highlighted, so put yours in the first </small>
+            <br />
+          </div>
           <div class="flex justify-center">
             <div class="w-1/3 text-center">
               <div

@@ -20,6 +20,15 @@
           class="mb-1 text-text-white"
         >
           <div id="message" class="break-words">
+            <div v-if="item.user && item.user.pfp">
+              <img
+                class="badges"
+                alt="pfp"
+                :src="item.user.pfp"
+                width="18"
+                height="18"
+              />
+            </div>
             <div v-if="item.user && item.user.badges">
               <img
                 v-for="badge in item.user.badges"
@@ -64,15 +73,21 @@ import Message from '@/utils/Message';
 export default class Chat extends Vue {
   private message = new Message();
 
+  private result = {};
+
   channel = String(this.$config.get(StoreConstants.Channel, ''));
+  
+  channelList = this.channel.split(/[, ]+/);
 
   clearChatTimer = Number(this.$config.get(StoreConstants.Timer, 0));
 
   client: Client;
 
+  private profilePictures = {};
+
   data: IMessageResponse[] = [];
 
-  broadCaster = this.channel;
+  broadCaster = this.channelList[0];
 
   isSetHideBordersByIcon = false;
 
@@ -82,7 +97,7 @@ export default class Chat extends Vue {
 
   // inverted chat set to default
   // until we figure out why the scrolling isn't working in frameless windows
-  addNewMessageToBottom = false; // !this.$config.get(StoreConstants.ReverseChat, false);
+  addNewMessageToBottom = true; // !this.$config.get(StoreConstants.ReverseChat, false);
 
   interval;
 
@@ -127,7 +142,7 @@ export default class Chat extends Vue {
 
     if (this.channel.length > 0) {
       this.client = client({
-        channels: [this.channel],
+        channels: this.channelList,
         connection: {
           reconnect: true,
         },
@@ -139,6 +154,7 @@ export default class Chat extends Vue {
 
       this.isLoading = false;
       this.isWaitingForMessages = true;
+      let needsPFP = this.channelList.length > 1;
 
       this.client.on('message', async (_channel, userstate, message) => {
         if (this.interval) {
@@ -151,12 +167,23 @@ export default class Chat extends Vue {
           badges = await this.message.getUserBadges(userstate);
         }
 
-        if (userstate.emotes !== null) {
-          message = await this.message.formatMessage(message, userstate.emotes);
+        if (!(userstate['room-id']! in this.profilePictures)) {
+          this.profilePictures[userstate['room-id']!] = await fetch(`https://api.twitch.tv/kraken/users/${userstate['room-id']}`, {
+                                                          headers: {"Client-ID": "uo32ie3c8upn1xqoy0gffc3kecypfc", 
+                                                                    "Accept"   : "application/vnd.twitchtv.v5+json"}
+                                                        }).then(response => response.json());
+          this.profilePictures[userstate['room-id']!] = this.profilePictures[userstate['room-id']!]['logo'];
         }
+        
+
+        this.result = await this.message.fetchTwitchEmotes(message, userstate.emotes);
+        this.result = await this.message.fetchBTTVEmotes(userstate['room-id']!, message, this.result);
+        
+        message = await this.message.formatMessage(message, this.result)
 
         const newItem = {
           user: {
+            pfp: this.profilePictures[userstate['room-id']!],
             color: userstate.color || '#8d41e6',
             name: userstate.username,
             badges,
