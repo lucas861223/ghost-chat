@@ -4,13 +4,13 @@ This is a forked repo of [ghost-chat](https://github.com/Enubia/ghost-chat). Thi
 
 ## Installation / Usage
 
-- Download the latest release (installer or standalone) from [https://github.com/Enubia/ghost-chat/releases](https://github.com/Enubia/ghost-chat/releases).
+- Download the latest release (installer or standalone) from [https://github.com/lucas861223/ghost-chat/releases](https://github.com/lucas861223/ghost-chat/releases).
 - Right clicking on chat can bring up context menu for settings.
 - To exit clickthrough mode, right click the icon from system tray and choose revert click-through.
 
-## With regard to window capturing frameless mode in OBS resulting in opaque background
+## With regard to window capturing frameless mode still has opaque background in OBS
 
-The original intend seems to focus more on streamer's personal experience, giving them an optoin of not having to pull up a second monitor/device to see chat, or a window that they could accidentally click on during games. You would need to use browser source or other types of capture if you want to capture chat with transparent background. My knowledge on those is limited, so I did not implement it in this quick modification, it will have to be done differently. Here is something you can do instead:
+Something about using GPU or about windows make OBS not able to capture the transparency of the window. You would need to use browser source or other types of capture if you want to capture chat with transparent background. My knowledge on those is limited, and don't really know how to solve this problem, so it will have to be done differently. Here is something you can do instead:
 
 Exit ghost mode. Set the background to white (#ffffff) or black (#000000), then set font color to the opposite (note that if you set the background to white it'd be hard to navigate the menu, though with highlighting and hovering it should be doable), then capture the window in OBS. 
 
