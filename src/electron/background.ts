@@ -226,6 +226,13 @@ ipcMain.on(IpcConstants.SetClickThrough, () => {
   win?.reload();
 });
 
+ipcMain.on(IpcConstants.SaveWinState, () => {
+  const [posX, posY] = win!.getPosition();
+  const [sizeX, sizeY] = win!.getSize();
+
+  store.set(StoreConstants.SavedWindowState, { posX, posY, sizeX, sizeY });
+});
+
 ipcMain.on(IpcConstants.Resize, (_event, args) => {
   store.delete(StoreConstants.IsSettingsPage);
 

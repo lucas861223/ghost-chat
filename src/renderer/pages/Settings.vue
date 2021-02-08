@@ -20,7 +20,7 @@
     <div v-if="activeTab === 'general'" class="grid w-full h-full">
       <div class="text-center">
         <div id="transparency" class="grid-rows-1 text-center mr-5 ml-5 py-2">
-          <span class="text-2xl">Window transparency</span>
+          <span class="text-2xl">Window Opacity</span>
           <div class="mt-2 flex justify-center">
             <Slider
               class="w-2/5"
@@ -68,21 +68,21 @@
                   v-model="newBackgroundColor"
                   type="text"
                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  @change="checkColorFormat(true)"
+                  @input="checkColorFormat(false)"
                 />
               </div>
             </div>
           </div>
-          <div v-if="showColorError">
-            <span class="text-1xl text-red-400">Wrong format!</span>
-          </div>
-          <div v-if="showColorSuccess">
+          <div v-if="this.validBackgroundColor">
             <span class="text-1xl">
               Chosen color is
               <span :style="`background-color: ${newBackgroundColor}; color: black;`">{{
                 newBackgroundColor
               }}</span>
             </span>
+          </div>
+          <div v-else>
+            <span class="text-1xl text-red-400">Wrong format!</span>
           </div>
         </div>
         <div class="w-full mt-2 mb-6">
@@ -168,21 +168,21 @@
                   v-model="newChatColor"
                   type="text"
                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  @change="checkColorFormat"
+                  @input="checkColorFormat(true)"
                 />
               </div>
             </div>
           </div>
-          <div v-if="showColorError">
-            <span class="text-1xl text-red-400">Wrong format!</span>
-          </div>
-          <div v-if="showColorSuccess">
+          <div v-if="this.validFontColor">
             <span class="text-1xl">
               Chosen color is
               <span :style="`background-color: ${newChatColor}; color: black;`">{{
                 newChatColor
               }}</span>
             </span>
+          </div>
+          <div v-else>
+            <span class="text-1xl text-red-400">Wrong format!</span>
           </div>
         </div>
         <div class="w-full mt-2 mb-6">
@@ -210,12 +210,19 @@
       <div class="text-center">
         <div class="flex justify-center">
           <div class="w-1/3 text-center">
-            <div
+            <div 
+              v-if="this.validBackgroundColor && this.validFontColor"
               id="submit-button"
               class="duration-300 bg-main hover:bg-main-darker cursor-pointer mt-2 text-white-800 py-1 px-2 rounded"
               @click="relaunch"
             >
               Save
+            </div>
+            <div 
+              v-else
+              class="duration-300 bg-main cursor-pointer mt-2 text-white-800 py-1 px-2 rounded"
+            >
+              invalid color
             </div>
           </div>
           <div class="w-1/3 text-center ml-2">
@@ -247,11 +254,12 @@ import { IWindowState } from '@/renderer/types/IWindowState';
   components: { MenuButtons, Slider, CheckBox },
 })
 export default class Settings extends Vue {
+
   newClearChatTimer = String(this.$config.get(StoreConstants.Timer, '0'));
 
   newChatColor = String(this.$config.get(StoreConstants.ChatColor, 'white'));
 
-  newBackgroundColor = '';
+  newBackgroundColor = '#' + this.$config.get(StoreConstants.BackgroundColor, '5c279d');
 
   newFontSize = String(this.$config.get(StoreConstants.FontSize, '12'));
 
@@ -265,9 +273,9 @@ export default class Settings extends Vue {
 
   defaultChannel = String(this.$config.get(StoreConstants.DefaultChannel, ''));
 
-  showColorError = false;
+  validFontColor = true; 
 
-  showColorSuccess = false;
+  validBackgroundColor = true;
 
   windowSize: { x: number; y: number };
 
@@ -277,10 +285,18 @@ export default class Settings extends Vue {
 
   activeTab = this.tabs[0];
 
+  data() {
+    return {
+      newBackgroundColor: '#' + this.$config.get(StoreConstants.BackgroundColor, '5c279d'),
+      newChatColor: String(this.$config.get(StoreConstants.ChatColor, 'white')),
+      defaultChannel: String(this.$config.get(StoreConstants.DefaultChannel, ''))
+    }
+  }
+
   created(): void {
     if (this.$config.has(StoreConstants.SavedWindowState)) {
       const state = this.$config.get(StoreConstants.SavedWindowState) as IWindowState;
-      this.windowSize = { x: state.sizeX, y: state.sizeY };
+      this.windowSize = { x: state.sizeX , y: state.sizeY };
       this.windowPos = { x: state.posX, y: state.posY };
     }
 
@@ -311,18 +327,12 @@ export default class Settings extends Vue {
     if (this.newFontSize.length > 0) {
       this.$config.set(StoreConstants.FontSize, this.newFontSize);
     }
-
-    if (process.env.NODE_ENV === 'production') {
-      this.$config.set(StoreConstants.IsSettingsPage, false);
-      ipcRenderer.send(IpcConstants.Relaunch, {
+    
+    ipcRenderer.send(IpcConstants.Reload, {
         winSize: { width: this.windowSize.x, height: this.windowSize.y },
-        winPos: { x: this.windowPos.x, y: this.windowPos.y },
-      });
-    } else {
-      ipcRenderer.send(IpcConstants.Reload, {
-        winSize: { width: this.windowSize.x, height: this.windowSize.y },
-      });
-    }
+    });
+    
+    this.$router.push('/index');
   }
 
   redirectIndex(): void {
@@ -330,6 +340,9 @@ export default class Settings extends Vue {
     ipcRenderer.send(IpcConstants.Resize, {
       resizeAble: true,
     });
+
+    ipcRenderer.send(IpcConstants.SaveWinState);
+
     this.$router.push('/index');
   }
 
@@ -358,26 +371,30 @@ export default class Settings extends Vue {
     shell.openExternal('https://htmlcolorcodes.com/color-picker/');
   }
 
-  checkColorFormat(font = false): void {
-    this.showColorSuccess = false;
-    this.showColorError = false;
-
+  checkColorFormat(font): void {
     let color;
     if (font) {
       color = this.newChatColor.trim();
+      this.validFontColor = false;
     } else {
       color = this.newBackgroundColor.trim();
+      this.validBackgroundColor = false;
     }
 
     if (color.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/g)) {
-      this.showColorSuccess = true;
       if (font) {
         this.newChatColor = color;
+        this.validFontColor = true;
       } else {
         this.newBackgroundColor = color;
+        this.validBackgroundColor = true;
       }
     } else {
-      this.showColorError = color.length !== 0;
+      if (font) {
+        this.validFontColor = color.length === 0;
+      } else {
+        this.validBackgroundColor = color.length === 0;
+      }
     }
   }
 
