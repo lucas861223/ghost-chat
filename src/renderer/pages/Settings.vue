@@ -254,7 +254,6 @@ import { IWindowState } from '@/renderer/types/IWindowState';
   components: { MenuButtons, Slider, CheckBox },
 })
 export default class Settings extends Vue {
-
   newClearChatTimer = String(this.$config.get(StoreConstants.Timer, '0'));
 
   newChatColor = String(this.$config.get(StoreConstants.ChatColor, 'white'));
@@ -296,7 +295,7 @@ export default class Settings extends Vue {
   created(): void {
     if (this.$config.has(StoreConstants.SavedWindowState)) {
       const state = this.$config.get(StoreConstants.SavedWindowState) as IWindowState;
-      this.windowSize = { x: state.sizeX , y: state.sizeY };
+      this.windowSize = { x: state.sizeX, y: state.sizeY };
       this.windowPos = { x: state.posX, y: state.posY };
     }
 
@@ -331,8 +330,6 @@ export default class Settings extends Vue {
     ipcRenderer.send(IpcConstants.Reload, {
         winSize: { width: this.windowSize.x, height: this.windowSize.y },
     });
-    
-    this.$router.push('/index');
   }
 
   redirectIndex(): void {
@@ -340,9 +337,7 @@ export default class Settings extends Vue {
     ipcRenderer.send(IpcConstants.Resize, {
       resizeAble: true,
     });
-
     ipcRenderer.send(IpcConstants.SaveWinState);
-
     this.$router.push('/index');
   }
 

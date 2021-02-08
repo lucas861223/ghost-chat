@@ -25,5 +25,5 @@ export enum IpcConstants {
   Reload = 'reload',
   SetClickThrough = 'setClickThrough',
   Resize = 'resize',
-  SaveWinState = 'saveWinState'
+  SaveWinState = 'saveWinState',
 }
